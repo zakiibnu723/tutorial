@@ -94,7 +94,7 @@
 				new RGBELoader()
 					.setDataType(THREE.UnsignedByteType)
 					.setPath('textures/')
-					.load('empty_play_room_1k.hdr', function(texture){
+					.load('brown_photostudio_02_1k.hdr', function(texture){
 
 						envmap = pmremGenerator.fromEquirectangular(texture).texture;
 
@@ -139,8 +139,8 @@
 				scene.add(ambientLight);
 
 				// Disable lights
-    // scene.remove(directionalLight);
-    // scene.remove(ambientLight);
+    scene.remove(directionalLight);
+    scene.remove(ambientLight);
 
 				//
 
