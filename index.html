@@ -12,12 +12,12 @@
 		<div id="content">
 			<div id="mySidenav" class="sidenav">
 				<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-				<a class="ar-object" id="1" href="#">gaming chair</a>
+				<a class="ar-object" id="1" href="#">item_1</a>
 				<a class="ar-object" id="2" href="#">item_2</a>
 				<a class="ar-object" id="3" href="#">item_3</a>
 				<a class="ar-object" id="4" href="#">item_4</a>
-				<a class="ar-object" id="watch" href="#">Watch</a>
-				<a class="ar-object" id="arm-chair" href="#">Arm Chair</a>
+				<a class="ar-object" id="arm-chair" href="#">arm-chair</a>
+				<a class="ar-object" id="ImageToStl.com_sofa" href="#">sofa</a>
 			</div>
 	
 			<div id="container" style="position: fixed;"></div>
@@ -94,20 +94,14 @@
 				new RGBELoader()
 					.setDataType(THREE.UnsignedByteType)
 					.setPath('textures/')
-					.load('brown_photostudio_02_1k.hdr', function(texture){
+					.load('photo_studio_01_1k.hdr', function(texture){
 
-						texture.mapping = THREE.EquirectangularReflectionMapping;
-						scene.background = texture
-						scene.environment = texture;
+						envmap = pmremGenerator.fromEquirectangular(texture).texture;
+
+						scene.environment = envmap;
+						texture.dispose();
+						pmremGenerator.dispose();
 						render();
-
-						// envmap = pmremGenerator.fromEquirectangular(texture).texture;
-
-						// scene.environment = envmap;
-						// texture.dispose();
-						// pmremGenerator.dispose();
-						// render();
-
 
 						var loader = new GLTFLoader().setPath('3d/');
 						loader.load(model + ".glb", function(glb) {
@@ -127,105 +121,94 @@
 					});
 			}
 
-			function init() {
+			function init() {  
+  
+	container = document.createElement('div');  
+	document.getElementById("container").appendChild(container);  
 
-				container = document.createElement( 'div' );
-				document.getElementById("container").appendChild( container );
+	scene = new THREE.Scene();  
+	window.scene = scene;  
 
-				scene = new THREE.Scene();
-				window.scene = scene;
+	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 200);  
 
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.001, 200 );
+	// Reset lighting setup  
+	// scene.clear(); // Clear existing lights  
 
-				var directionalLight = new THREE.DirectionalLight(0xdddddd, 1);
-				directionalLight.position.set(0, 0, 1).normalize();
-				scene.add(directionalLight);
+	// Add Hemispherical Light  
+	var hemisphericLight = new THREE.HemisphereLight(0xffa500, 0x808080, 1); // Orange and gray  
+	scene.add(hemisphericLight);  
 
-				var ambientLight = new THREE.AmbientLight(0x222222);
-				scene.add(ambientLight);
+	// Set renderer with Reinhard tone mapping  
+	renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });  
+	renderer.toneMapping = THREE.ReinhardToneMapping; // Set Reinhard tone mapping  
+	renderer.toneMappingExposure = 2.5; // Adjust exposure if needed  
+	renderer.setPixelRatio(window.devicePixelRatio);  
+	renderer.setSize(window.innerWidth, window.innerHeight);  
+	renderer.xr.enabled = true;  
+	container.appendChild(renderer.domElement);  
 
-				// Disable lights
-    scene.remove(directionalLight);
-    scene.remove(ambientLight);
+	pmremGenerator = new THREE.PMREMGenerator(renderer);  
+	pmremGenerator.compileEquirectangularShader();  
 
-				//
+	controls = new OrbitControls(camera, renderer.domElement);  
+	controls.addEventListener('change', render);  
+	controls.minDistance = 2;  
+	controls.maxDistance = 10;  
+	controls.target.set(0, 0, -0.2);  
+	controls.enableDamping = true;  
+	controls.dampingFactor = 0.05;  
 
-				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.xr.enabled = true;
-				container.appendChild( renderer.domElement );
+	// VR SETUP  
+	document.body.appendChild(VRButton.createButton(renderer));  
 
-				pmremGenerator = new THREE.PMREMGenerator(renderer);
-				pmremGenerator.compileEquirectangularShader();
+	// AR SETUP  
+	let options = {  
+			requiredFeatures: ['hit-test'],  
+			optionalFeatures: ['dom-overlay'],  
+	}  
 
-				controls = new OrbitControls(camera, renderer.domElement);
-				controls.addEventListener('change', render);
-				controls.minDistance = 2;
-				controls.maxDistance = 10;
-				controls.target.set(0, 0, -0.2);
-				controls.enableDamping = true;
-				controls.dampingFactor = 0.05;
+	options.domOverlay = { root: document.getElementById('content') };  
 
-				//VR SETUP
-				document.body.appendChild(VRButton.createButton(renderer));
+	document.body.appendChild(ARButton.createButton(renderer, options));  
 
-				//AR SETUP
+	reticle = new THREE.Mesh(  
+			new THREE.RingBufferGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),  
+			new THREE.MeshBasicMaterial()  
+	);  
+	reticle.matrixAutoUpdate = false;  
+	reticle.visible = false;  
+	scene.add(reticle);  
 
-				let options = {
-					requiredFeatures: ['hit-test'],
-					optionalFeatures: ['dom-overlay'],
-				}
+	window.addEventListener('resize', onWindowResize, false);  
 
-				options.domOverlay = { root: document.getElementById('content')};
+	renderer.domElement.addEventListener('touchstart', function(e) {  
+			e.preventDefault();  
+			touchDown = true;  
+			touchX = e.touches[0].pageX;  
+			touchY = e.touches[0].pageY;  
+	}, false);  
 
-				document.body.appendChild( ARButton.createButton(renderer, options));
+	renderer.domElement.addEventListener('touchend', function(e) {  
+			e.preventDefault();  
+			touchDown = false;  
+	}, false);  
 
-				//document.body.appendChild( ARButton.createButton( renderer, { requiredFeatures: [ 'hit-test' ] } ) );
+	renderer.domElement.addEventListener('touchmove', function(e) {  
+			e.preventDefault();  
 
-				//
+			if (!touchDown) {  
+					return;  
+			}  
 
-				reticle = new THREE.Mesh(
-					new THREE.RingBufferGeometry( 0.15, 0.2, 32 ).rotateX( - Math.PI / 2 ),
-					new THREE.MeshBasicMaterial()
-				);
-				reticle.matrixAutoUpdate = false;
-				reticle.visible = false;
-				scene.add( reticle );
+			deltaX = e.touches[0].pageX - touchX;  
+			deltaY = e.touches[0].pageY - touchY;  
+			touchX = e.touches[0].pageX;  
+			touchY = e.touches[0].pageY;  
 
-				//
+			rotateObject();  
 
-				window.addEventListener( 'resize', onWindowResize, false );
-
-				renderer.domElement.addEventListener('touchstart', function(e){
-					e.preventDefault();
-					touchDown=true;
-					touchX = e.touches[0].pageX;
-					touchY = e.touches[0].pageY;
-				}, false);
-
-				renderer.domElement.addEventListener('touchend', function(e){
-					e.preventDefault();
-					touchDown = false;
-				}, false);
-
-				renderer.domElement.addEventListener('touchmove', function(e){
-					e.preventDefault();
-					
-					if(!touchDown){
-						return;
-					}
-
-					deltaX = e.touches[0].pageX - touchX;
-					deltaY = e.touches[0].pageY - touchY;
-					touchX = e.touches[0].pageX;
-					touchY = e.touches[0].pageY;
-
-					rotateObject();
-
-				}, false);
-
-			}
+	}, false);  
+}  
 
 			var touchDown, touchX, touchY, deltaX, deltaY;
 
