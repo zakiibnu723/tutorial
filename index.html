@@ -96,12 +96,18 @@
 					.setPath('textures/')
 					.load('brown_photostudio_02_1k.hdr', function(texture){
 
-						envmap = pmremGenerator.fromEquirectangular(texture).texture;
-
-						scene.environment = envmap;
-						texture.dispose();
-						pmremGenerator.dispose();
+						texture.mapping = THREE.EquirectangularReflectionMapping;
+						scene.background = texture
+						scene.environment = texture;
 						render();
+
+						// envmap = pmremGenerator.fromEquirectangular(texture).texture;
+
+						// scene.environment = envmap;
+						// texture.dispose();
+						// pmremGenerator.dispose();
+						// render();
+
 
 						var loader = new GLTFLoader().setPath('3d/');
 						loader.load(model + ".glb", function(glb) {
