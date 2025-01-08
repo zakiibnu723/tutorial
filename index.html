@@ -95,18 +95,16 @@
             current_object.visible = true;  
 		
 		
-            // Update shadow position to match the current object  
+        // Update shadow position to match the current object  
         if (shadowObject) {  
             shadowObject.position.set(current_object.position.x, 0, current_object.position.z);  
-            shadowObject.scale.set(current_object.scale.x, 1, current_object.scale.z); // Match the scale of the object  
-            shadowObject.rotation.y = current_object.rotation.y; // Match the rotation of the object  
         }  
         }  
     }  
   
 	var shadowObject; // Declare a variable for the shadow object  
   
-    function loadModel(model) {  
+function loadModel(model) {  
     // Load GLTF model  
     new RGBELoader()  
         .setDataType(THREE.UnsignedByteType)  
@@ -139,7 +137,7 @@
                 arPlace();  
   
                 // Create shadow object  
-                createShadowObject(current_object);  
+                createShadowObject();  
   
                 var box = new THREE.Box3();  
                 box.setFromObject(current_object);  
@@ -150,22 +148,23 @@
             });  
         });  
 }  
-    
- function createShadowObject(object) {  
-    // Create a shadow mesh based on the object's geometry  
-    object.traverse(n => {  
-        if (n.isMesh) {  
-            const shadowGeometry = new THREE.PlaneGeometry(1, 1); // Create a plane for the shadow  
-            shadowObject = new THREE.Mesh(shadowGeometry, new THREE.ShadowMaterial({ opacity: 0.5 }));  
-            shadowObject.rotation.x = -Math.PI / 2; // Rotate to lay flat on the ground  
-            shadowObject.position.y = 0.01; // Slightly above the ground to avoid z-fighting  
-            shadowObject.receiveShadow = true; // Enable shadow receiving  
-            scene.add(shadowObject);  
-        }  
+
+	function createShadowObject() {  
+    // Create a dark smooth plane to act as a shadow  
+    const shadowGeometry = new THREE.CircleGeometry(0.5, 32); // Adjust size as needed  
+    const shadowMaterial = new THREE.MeshStandardMaterial({  
+        color: 0x000000, // Dark color  
+        opacity: 0.5, // Semi-transparent  
+        transparent: true,  
+        depthWrite: false // Prevent depth writing to allow for transparency  
     });  
   
-    alert('Shadow created!');  
-} 
+    shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);  
+    shadowObject.rotation.x = -Math.PI / 2; // Rotate to lay flat on the ground  
+    shadowObject.position.y = 0.01; // Slightly above the ground to avoid z-fighting  
+    scene.add(shadowObject);  
+}
+
     
     function init() {  
   
