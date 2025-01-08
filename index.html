@@ -138,7 +138,7 @@ function loadModel(model) {
   
 function createShadowPlane() {  
     // Create a larger plane geometry for the shadow  
-    const planeGeometry = new THREE.PlaneGeometry(10, 10); // Adjust size as needed  
+    const planeGeometry = new THREE.PlaneGeometry(20, 20); // Adjust size as needed  
     const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.5 }); // Semi-transparent shadow  
     shadowPlane = new THREE.Mesh(planeGeometry, planeMaterial);  
     shadowPlane.rotation.x = -Math.PI / 2; // Rotate to lay flat  
