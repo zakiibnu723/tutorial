@@ -119,7 +119,7 @@
                     current_object.traverse(n => {  
                         if (n.isMesh) {  
                             n.castShadow = true; // Enable shadow casting  
-                            n.receiveShadow = false; // Enable shadow receiving  
+                            n.receiveShadow = true; // Enable shadow receiving  
                             
                             if (n.material.map) n.material.map.anisotropy = 16
                         }  
@@ -177,8 +177,8 @@
     const light = new THREE.DirectionalLight(0xffffff, 1);  
     light.position.set(10, 10, 10);  
     light.castShadow = true; // Enable shadow casting  
-    light.shadow.mapSize.width = 1024; // Set shadow map size  
-    light.shadow.mapSize.height = 1024;  
+    light.shadow.mapSize.width = 1024*4; // Set shadow map size  
+    light.shadow.mapSize.height = 1024*4;  
     light.shadow.camera.near = 0.5; // Set shadow camera near  
     light.shadow.camera.far = 50; // Set shadow camera far  
     light.shadow.camera.left = -10; // Set shadow camera bounds  
@@ -202,7 +202,7 @@
 
 	// Create a ground plane  
     const groundGeometry = new THREE.PlaneGeometry(100, 100);  
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });  
+    const groundMaterial = new THREE.ShadowMaterial({ opacity: 1 });  
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
     ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
     ground.receiveShadow = true; // Allow the ground to receive shadows  
