@@ -119,7 +119,7 @@
                     current_object.traverse(n => {  
                         if (n.isMesh) {  
                             n.castShadow = true; // Enable shadow casting  
-                            n.receiveShadow = false; // Enable shadow receiving  
+                            n.receiveShadow = true; // Enable shadow receiving  
                             
                             if (n.material.map) n.material.map.anisotropy = 16
                         }  
@@ -171,22 +171,6 @@
         // spotlight.shadow.camera.far = 50; // Set shadow camera far  
         // spotlight.shadow.camera.fov = 30; // Set shadow camera field of view  
         scene.add(spotlight);  
-
-
-	// Add a directional light  
-    const light = new THREE.DirectionalLight(0xffffff, 1);  
-    light.position.set(10, 10, 10);  
-    light.castShadow = true; // Enable shadow casting  
-    light.shadow.mapSize.width = 1024; // Set shadow map size  
-    light.shadow.mapSize.height = 1024;  
-    light.shadow.camera.near = 0.5; // Set shadow camera near  
-    light.shadow.camera.far = 50; // Set shadow camera far  
-    light.shadow.camera.left = -10; // Set shadow camera bounds  
-    light.shadow.camera.right = 10;  
-    light.shadow.camera.top = 10;  
-    light.shadow.camera.bottom = -10;  
-    scene.add(light);  
-	    
   
         // Set renderer with Reinhard tone mapping  
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });  
@@ -196,19 +180,8 @@
         renderer.setSize(window.innerWidth, window.innerHeight);  
         renderer.xr.enabled = true;  
         renderer.shadowMap.enabled = true; // Enable shadow maps  
-	renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
         container.appendChild(renderer.domElement);  
-
-
-	// Create a ground plane  
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);  
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });  
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
-    ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
-
-    ground.receiveShdow = true; // Allow the ground to receive shadows  
-    scene.add(ground);  
-	    
+  
         pmremGenerator = new THREE.PMREMGenerator(renderer);  
         pmremGenerator.compileEquirectangularShader();  
   
