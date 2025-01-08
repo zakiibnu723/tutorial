@@ -104,80 +104,126 @@
   
 	var shadowObject; // Declare a variable for the shadow object  
   
-function loadModel(model) {  
-    // Load GLTF model  
-    new RGBELoader()  
-        .setDataType(THREE.UnsignedByteType)  
-        .setPath('textures/')  
-        .load('photo_studio_01_1k.hdr', function (texture) {  
-  
-            envmap = pmremGenerator.fromEquirectangular(texture).texture;  
-  
-            scene.environment = envmap;  
-            texture.dispose();  
-            pmremGenerator.dispose();  
-            render();  
-  
-            var loader = new GLTFLoader().setPath('3d/');  
-            loader.load(model + ".glb", function (glb) {  
-  
-                current_object = glb.scene;  
-  
-                // Traverse the current_object to set shadow properties  
-                current_object.traverse(n => {  
-                    if (n.isMesh) {  
-                        n.castShadow = true; // Enable shadow casting  
-                        n.receiveShadow = true; // Enable shadow receiving  
-  
-                        if (n.material.map) n.material.map.anisotropy = 16;  
-                    }  
-                });  
-  
-                scene.add(current_object);  
-                arPlace();  
-  
-                // Create shadow object  
-                createShadowObject();  
-  
-                var box = new THREE.Box3();  
-                box.setFromObject(current_object);  
-                box.center(controls.target);  
-  
-                controls.update();  
-                render();  
-            });  
-        });  
-}  
+// Modify the loadModel function to create shadow after model loads
+function loadModel(model) {
+    new RGBELoader()
+        .setDataType(THREE.UnsignedByteType)
+        .setPath('textures/')
+        .load('photo_studio_01_1k.hdr', function(texture) {
+            envmap = pmremGenerator.fromEquirectangular(texture).texture;
+            scene.environment = envmap;
+            texture.dispose();
+            pmremGenerator.dispose();
+            render();
 
-function createShadowObject() {  
-    if (current_object) {  
-        // Calculate the bounding box of the current object  
-        const box = new THREE.Box3().setFromObject(current_object);  
-        const size = new THREE.Vector3();  
-        box.getSize(size); // Get the size of the bounding box  
-  
-        // Create a shadow geometry based on the size of the current object  
-        const shadowGeometry = new THREE.PlaneGeometry(size.x, size.z); // Use the width and depth for the shadow  
-        const shadowMaterial = new THREE.MeshStandardMaterial({  
-            color: 0x000000, // Dark color  
-            opacity: 0.5, // Semi-transparent  
-            transparent: true,  
-            depthWrite: false // Prevent depth writing to allow for transparency  
-        });  
-  
-        // Remove the previous shadow object if it exists  
-        if (shadowObject) {  
-            scene.remove(shadowObject);  
-        }  
-  
-        // Create the new shadow object  
-        shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);  
-        shadowObject.rotation.x = -Math.PI / 2; // Rotate to lay flat on the ground  
-        shadowObject.position.y = 0.01; // Slightly above the ground to avoid z-fighting  
-        scene.add(shadowObject);  
-    }  
-}  
+            var loader = new GLTFLoader().setPath('3d/');
+            loader.load(model + ".glb", function(glb) {
+                if (current_object) {
+                    scene.remove(current_object);
+                }
+                if (shadowObject) {
+                    scene.remove(shadowObject);
+                }
 
+                current_object = glb.scene;
+                current_object.traverse(n => {
+                    if (n.isMesh) {
+                        n.castShadow = true;
+                        n.receiveShadow = true;
+                        if (n.material.map) n.material.map.anisotropy = 16;
+                    }
+                });
+
+                scene.add(current_object);
+                createShadowObject();
+                arPlace();
+
+                var box = new THREE.Box3();
+                box.setFromObject(current_object);
+                box.center(controls.target);
+
+                controls.update();
+                render();
+            });
+        });
+}
+
+// Replace the existing createShadowObject function with this improved version
+function createShadowObject() {
+    // Remove existing shadow if it exists
+    if (shadowObject) {
+        scene.remove(shadowObject);
+    }
+
+    // Get the bounding box of the current object
+    const bbox = new THREE.Box3().setFromObject(current_object);
+    const size = bbox.getSize(new THREE.Vector3());
+
+    // Calculate the radius based on the largest horizontal dimension
+    const radius = Math.max(size.x, size.z) / 2;
+
+    // Create a plane geometry that matches the object's footprint
+    const shadowGeometry = new THREE.PlaneGeometry(size.x * 1.2, size.z * 1.2);
+    const shadowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false,
+        blending: THREE.MultiplyBlending
+    });
+
+    shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    shadowObject.rotation.x = -Math.PI / 2;
+    shadowObject.position.y = 0.001; // Slightly above ground to prevent z-fighting
+
+    scene.add(shadowObject);
+
+    // Update shadow position and rotation
+    updateShadow();
+}
+
+// Add this new function to update shadow position and rotation
+function updateShadow() {
+    if (shadowObject && current_object) {
+        // Get current object's position
+        const objectPos = current_object.position;
+        
+        // Update shadow position
+        shadowObject.position.x = objectPos.x;
+        shadowObject.position.z = objectPos.z;
+        
+        // Update shadow rotation to match object's Y rotation
+        shadowObject.rotation.z = current_object.rotation.y;
+        
+        // Update shadow opacity based on height
+        const height = objectPos.y;
+        const maxHeight = 2; // Maximum height where shadow is still visible
+        const opacity = Math.max(0, 1 - (height / maxHeight));
+        shadowObject.material.opacity = opacity * 0.3;
+    }
+}
+
+// Modify the arPlace function to update shadow
+function arPlace() {
+    if (reticle.visible) {
+        current_object.position.setFromMatrixPosition(reticle.matrix);
+        current_object.visible = true;
+        
+        // Create or update shadow
+        if (!shadowObject) {
+            createShadowObject();
+        }
+        updateShadow();
+    }
+}
+
+// Modify the rotateObject function to update shadow rotation
+function rotateObject() {
+    if (current_object && reticle.visible) {
+        current_object.rotation.y += deltaX / 100;
+        updateShadow(); // Update shadow rotation when object rotates
+    }
+}
 
     
     function init() {  
