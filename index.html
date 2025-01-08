@@ -93,68 +93,76 @@
         if ( reticle.visible ) {  
             current_object.position.setFromMatrixPosition(reticle.matrix);  
             current_object.visible = true;  
-
-		 // Position the shadow plane below the current object  
-       		shadowPlane.position.set(current_object.position.x, current_object.position.y - 0.01, current_object.position.z); // Adjust Y offset as needed  
+		
+		// Update shadow position to match the current object  
+	        if (shadowObject) {  
+	            shadowObject.position.set(current_object.position.x, 0, current_object.position.z);  
+	        }  
         }  
     }  
   
-		function loadModel(model) {  
-            // Load GLTF model  
-            new RGBELoader()  
-            .setDataType(THREE.UnsignedByteType)  
-            .setPath('textures/')  
-            .load('photo_studio_01_1k.hdr', function (texture) {  
-
-                envmap = pmremGenerator.fromEquirectangular(texture).texture;  
-
-                scene.environment = envmap;  
-                texture.dispose();  
-                pmremGenerator.dispose();  
-                render();  
-
-                var loader = new GLTFLoader().setPath('3d/');  
-                loader.load(model + ".glb", function (glb) {  
-
-                    current_object = glb.scene;                 
-
-                    // Traverse the current_object to set shadow properties  
-                    current_object.traverse(n => {  
-                        if (n.isMesh) {  
-                            n.castShadow = true; // Enable shadow casting  
-                            n.receiveShadow = true; // Enable shadow receiving  
-                            
-                            if (n.material.map) n.material.map.anisotropy = 16
-                        }  
-                    });  
-
-                    scene.add(current_object);  
-                    arPlace();
-
-			// Create a shadow plane  
-            var shadowPlaneGeometry = new THREE.PlaneGeometry(1, 1); // Adjust size as needed  
-            var shadowMaterial = new THREE.MeshStandardMaterial({  
-                color: 0x000000, // Dark color for shadow  
-                opacity: 0.5, // Semi-transparent to simulate shadow  
-                transparent: true,  
-                depthWrite: false // Prevents the shadow from occluding other objects  
-            });  
-            shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowMaterial);  
-            shadowPlane.rotation.x = -Math.PI / 2; // Rotate to lay flat  
-            shadowPlane.receiveShadow = true; // Enable shadow receiving  
-            scene.add(shadowPlane); // Add to the scene 
-
-			
-
-                    var box = new THREE.Box3();  
-                    box.setFromObject(current_object);  
-                    box.center(controls.target);  
-
-                    controls.update();  
-                    render();  
+	var shadowObject; // Declare a variable for the shadow object  
+  
+function loadModel(model) {  
+    // Load GLTF model  
+    new RGBELoader()  
+        .setDataType(THREE.UnsignedByteType)  
+        .setPath('textures/')  
+        .load('photo_studio_01_1k.hdr', function (texture) {  
+  
+            envmap = pmremGenerator.fromEquirectangular(texture).texture;  
+  
+            scene.environment = envmap;  
+            texture.dispose();  
+            pmremGenerator.dispose();  
+            render();  
+  
+            var loader = new GLTFLoader().setPath('3d/');  
+            loader.load(model + ".glb", function (glb) {  
+  
+                current_object = glb.scene;  
+  
+                // Traverse the current_object to set shadow properties  
+                current_object.traverse(n => {  
+                    if (n.isMesh) {  
+                        n.castShadow = true; // Enable shadow casting  
+                        n.receiveShadow = true; // Enable shadow receiving  
+  
+                        if (n.material.map) n.material.map.anisotropy = 16;  
+                    }  
                 });  
+  
+                scene.add(current_object);  
+                arPlace();  
+  
+                // Create shadow object  
+                createShadowObject();  
+  
+                var box = new THREE.Box3();  
+                box.setFromObject(current_object);  
+                box.center(controls.target);  
+  
+                controls.update();  
+                render();  
             });  
-        }  
+        });  
+}  
+  
+function createShadowObject() {  
+    // Create a dark smooth plane to act as a shadow  
+    const shadowGeometry = new THREE.CircleGeometry(0.5, 32); // Adjust size as needed  
+    const shadowMaterial = new THREE.MeshStandardMaterial({  
+        color: 0x000000, // Dark color  
+        opacity: 0.5, // Semi-transparent  
+        transparent: true,  
+        depthWrite: false // Prevent depth writing to allow for transparency  
+    });  
+  
+    shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);  
+    shadowObject.rotation.x = -Math.PI / 2; // Rotate to lay flat on the ground  
+    shadowObject.position.y = 0.01; // Slightly above the ground to avoid z-fighting  
+    scene.add(shadowObject);  
+}  
 
     
     function init() {  
