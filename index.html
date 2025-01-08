@@ -205,7 +205,7 @@
     const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });  
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
     ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
-    ground.position.y = 0 
+    ground.position.y = 0;
     ground.receiveShdow = true; // Allow the ground to receive shadows  
     scene.add(ground);  
 	    
