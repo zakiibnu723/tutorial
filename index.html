@@ -158,11 +158,12 @@
   
         // Add Spotlight  
         var spotlight = new THREE.SpotLight(0xffffff, 4); // White light with intensity 4  
-        spotlight.position.set(  
-            camera.position.x + 10,  
-            camera.position.y + 10,  
-            camera.position.z + 10  
-        );  
+        // spotlight.position.set(  
+        //     camera.position.x + 10,  
+        //     camera.position.y + 10,  
+        //     camera.position.z + 10  
+        // );
+	    spotlight.position.set(10, 10, 10);
         spotlight.castShadow = true; // Enable shadow casting  
         spotlight.shadow.bias = -0.0001
         spotlight.shadow.mapSize.width = 1024*4; // Set shadow map size  
@@ -202,7 +203,8 @@
 
 	// Create a ground plane  
     	const groundGeometry = new THREE.PlaneGeometry(100, 100);  
-    	const groundMaterial = new THREE.ShadowMaterial({ opacity: 1 });  
+    	// const groundMaterial = new THREE.ShadowMaterial({ opacity: 1 });  
+	    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); /
     	const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
    	ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
 	ground.position.y = 0; // Ensure it's at the correct height 
