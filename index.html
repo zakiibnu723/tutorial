@@ -201,12 +201,13 @@
 
 
 	// Create a ground plane  
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);  
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 1 });  
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
-    ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
-    ground.receiveShadow = true; // Allow the ground to receive shadows  
-    scene.add(ground);  
+    	const groundGeometry = new THREE.PlaneGeometry(100, 100);  
+    	const groundMaterial = new THREE.ShadowMaterial({ opacity: 1 });  
+    	const ground = new THREE.Mesh(groundGeometry, groundMaterial);  
+   	ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal  
+	ground.position.y = 0; // Ensure it's at the correct height 
+    	ground.receiveShadow = true; // Allow the ground to receive shadows  
+    	scene.add(ground);  
 	    
         pmremGenerator = new THREE.PMREMGenerator(renderer);  
         pmremGenerator.compileEquirectangularShader();  
