@@ -93,6 +93,9 @@
         if ( reticle.visible ) {  
             current_object.position.setFromMatrixPosition(reticle.matrix);  
             current_object.visible = true;  
+
+		 // Position the shadow plane below the current object  
+       		shadowPlane.position.set(current_object.position.x, current_object.position.y - 0.01, current_object.position.z); // Adjust Y offset as needed  
         }  
     }  
   
@@ -126,7 +129,22 @@
                     });  
 
                     scene.add(current_object);  
-                    arPlace();  
+                    arPlace();
+
+			// Create a shadow plane  
+            var shadowPlaneGeometry = new THREE.PlaneGeometry(1, 1); // Adjust size as needed  
+            var shadowMaterial = new THREE.MeshStandardMaterial({  
+                color: 0x000000, // Dark color for shadow  
+                opacity: 0.5, // Semi-transparent to simulate shadow  
+                transparent: true,  
+                depthWrite: false // Prevents the shadow from occluding other objects  
+            });  
+            shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowMaterial);  
+            shadowPlane.rotation.x = -Math.PI / 2; // Rotate to lay flat  
+            shadowPlane.receiveShadow = true; // Enable shadow receiving  
+            scene.add(shadowPlane); // Add to the scene 
+
+			
 
                     var box = new THREE.Box3();  
                     box.setFromObject(current_object);  
