@@ -10,22 +10,21 @@
 <body>  
   
 <div id="content">  
-	<div id="mySidenav" class="sidenav">
-		<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-		<a class="ar-object" id="1" href="#">item_1</a>
-		<a class="ar-object" id="2" href="#">item_2</a>
-		<a class="ar-object" id="3" href="#">item_3</a>
-		<a class="ar-object" id="4" href="#">item_4</a>
-		<a class="ar-object" id="yelow-sofa" href="#">yelow-sofa</a>
-		<a class="ar-object" id="blue-chair" href="#">blue-chair</a>
-		<a class="ar-object" id="arm-chair" href="#">arm-chair</a>
-		<a class="ar-object" id="sofa1" href="#">sofa obj 1</a>
-		<a class="ar-object" id="sofa-2b" href="#">sofa 2b </a>
-		<a class="ar-object" id="uploads_files_3063858_Lounge+Chair+ITF" href="#">Lounge Chair</a>		
-		<a class="ar-object" id="Memosofa" href="#">Memosofa obj</a>		
-		<a class="ar-object" id="ImageToStl.com_sofa" href="#">sofa1 glb (imagetostl)</a>
-		
-	</div>
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a class="ar-object" id="1" href="#">item_1</a>
+        <a class="ar-object" id="2" href="#">item_2</a>
+        <a class="ar-object" id="3" href="#">item_3</a>
+        <a class="ar-object" id="4" href="#">item_4</a>
+        <a class="ar-object" id="yelow-sofa" href="#">yelow-sofa</a>
+        <a class="ar-object" id="blue-chair" href="#">blue-chair</a>
+        <a class="ar-object" id="arm-chair" href="#">arm-chair</a>
+        <a class="ar-object" id="sofa1" href="#">sofa obj 1</a>
+        <a class="ar-object" id="sofa-2b" href="#">sofa 2b </a>
+        <a class="ar-object" id="uploads_files_3063858_Lounge+Chair+ITF" href="#">Lounge Chair</a>        
+        <a class="ar-object" id="Memosofa" href="#">Memosofa obj</a>        
+        <a class="ar-object" id="ImageToStl.com_sofa" href="#">sofa1 glb (imagetostl)</a>
+    </div>
   
     <div id="container" style="position: fixed;"></div>  
   
@@ -45,22 +44,20 @@
 </script>  
   
 <script type="module">  
-  
     import * as THREE from './build/three.module.js';  
     import { ARButton } from './jsm/webxr/ARButton.js';  
     import { VRButton } from './jsm/webxr/VRButton.js';  
     import { OrbitControls } from './jsm/controls/OrbitControls.js';  
     import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; 
-		import { OBJLoader } from './jsm/loaders/OBJLoader.js';   
+    import { OBJLoader } from './jsm/loaders/OBJLoader.js';   
     import { RGBELoader } from './jsm/loaders/RGBELoader.js';  
     import { RoughnessMipmapper } from './jsm/utils/RoughnessMipmapper.js';  
   
     var container;  
     var camera, scene, renderer;  
     var controller;  
-  
-    var reticle, pmremGenerator, current_object, controls, isAR, envmap;  
-  	
+    var reticle, pmremGenerator, current_object, controls, isAR, envmap;
+    var shadowPlane;  
     var hitTestSource = null;  
     var hitTestSourceRequested = false;  
   
@@ -71,7 +68,6 @@
         if(current_object != null){  
             scene.remove(current_object);  
         }  
-  
         loadModel($(this).attr("id"));  
     });  
   
@@ -88,77 +84,70 @@
     $("#place-button").click(function(){  
         arPlace();  
     });  
+
+    function createShadowPlane() {
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const material = new THREE.ShadowMaterial({
+            color: 0x000000,
+            opacity: 0.3,
+        });
+        shadowPlane = new THREE.Mesh(geometry, material);
+        shadowPlane.rotation.x = -Math.PI / 2;
+        shadowPlane.position.y = 0.001;
+        shadowPlane.receiveShadow = true;
+        shadowPlane.visible = false;
+        scene.add(shadowPlane);
+    }
   
     function arPlace(){  
-        if ( reticle.visible ) {  
+        if (reticle.visible) {  
             current_object.position.setFromMatrixPosition(reticle.matrix);  
             current_object.visible = true;  
 
-		 // Position and show the shadow plane
-        shadowPlane.position.setFromMatrixPosition(reticle.matrix);
-        shadowPlane.visible = true;
+            // Position and show the shadow plane
+            shadowPlane.position.setFromMatrixPosition(reticle.matrix);
+            shadowPlane.visible = true;
         }  
     }  
   
-		function loadModel(model) {  
-            // Load GLTF model  
-            new RGBELoader()  
-            .setDataType(THREE.UnsignedByteType)  
-            .setPath('textures/')  
-            .load('photo_studio_01_1k.hdr', function (texture) {  
+    function loadModel(model) {  
+        new RGBELoader()  
+        .setDataType(THREE.UnsignedByteType)  
+        .setPath('textures/')  
+        .load('photo_studio_01_1k.hdr', function (texture) {  
+            envmap = pmremGenerator.fromEquirectangular(texture).texture;  
+            scene.environment = envmap;  
+            texture.dispose();  
+            pmremGenerator.dispose();  
+            render();  
 
-                envmap = pmremGenerator.fromEquirectangular(texture).texture;  
-
-                scene.environment = envmap;  
-                texture.dispose();  
-                pmremGenerator.dispose();  
-                render();  
-
-                var loader = new GLTFLoader().setPath('3d/');  
-                loader.load(model + ".glb", function (glb) {  
-
-                    current_object = glb.scene;                 
-
-                    // Traverse the current_object to set shadow properties  
-                    current_object.traverse(n => {  
-                        if (n.isMesh) {  
-                            n.castShadow = true; // Enable shadow casting  
-                            n.receiveShadow = true; // Enable shadow receiving  
-                            
-                            if (n.material.map) n.material.map.anisotropy = 16
-                        }  
-                    });  
-
-                    scene.add(current_object);  
-                    arPlace();  
-
-                    var box = new THREE.Box3();  
-                    box.setFromObject(current_object);  
-                    box.center(controls.target);  
-
-                    controls.update();  
-                    render();  
+            var loader = new GLTFLoader().setPath('3d/');  
+            loader.load(model + ".glb", function (glb) {  
+                current_object = glb.scene;                 
+                
+                // Enable shadows for all meshes in the model
+                current_object.traverse(node => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        if (node.material.map) node.material.map.anisotropy = 16;
+                    }
                 });  
-            });  
-        }  
-let shadowPlane
-function createShadowPlane() {
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const material = new THREE.ShadowMaterial({
-        color: 0x000000,
-        opacity: 0.3,
-    });
-    shadowPlane = new THREE.Mesh(geometry, material);
-    shadowPlane.rotation.x = -Math.PI / 2;
-    shadowPlane.position.y = 0.001; // Slightly above ground to prevent z-fighting
-    shadowPlane.receiveShadow = true;
-    shadowPlane.visible = false;
-    scene.add(shadowPlane);
-}
 
-	
+                scene.add(current_object);  
+                arPlace();  
+
+                var box = new THREE.Box3();  
+                box.setFromObject(current_object);  
+                box.center(controls.target);  
+
+                controls.update();  
+                render();  
+            });  
+        });  
+    }  
+    
     function init() {  
-  
         container = document.createElement('div');  
         document.getElementById("container").appendChild(container);  
   
@@ -167,60 +156,38 @@ function createShadowPlane() {
   
         camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 200);  
   
-        // Reset lighting setup  
-        // scene.clear(); // Clear existing lights  
+        // Enhanced lighting setup
+        const hemisphericLight = new THREE.HemisphereLight(0xffffff, 0x808080, 1);
+        scene.add(hemisphericLight);
+
+        // Main directional light for shadows
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+        directionalLight.position.set(5, 5, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.1;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.camera.left = -5;
+        directionalLight.shadow.camera.right = 5;
+        directionalLight.shadow.camera.top = 5;
+        directionalLight.shadow.camera.bottom = -5;
+        directionalLight.shadow.bias = -0.0001;
+        scene.add(directionalLight);
+
+        // Fill light
+        const fillLight = new THREE.DirectionalLight(0xffffff, 1);
+        fillLight.position.set(-5, 3, -5);
+        scene.add(fillLight);
   
-        // Add Hemispherical Light  
-        var hemisphericLight = new THREE.HemisphereLight(0xffa500, 0x808080, 1); // Orange and gray  
-        scene.add(hemisphericLight);  
-  
-        // Add Spotlight  
-        var spotlight = new THREE.SpotLight(0xffffff, 4); // White light with intensity 4  
-        spotlight.position.set(  
-            camera.position.x + 10,  
-            camera.position.y + 10,  
-            camera.position.z + 10  
-        );  
-        spotlight.castShadow = true; // Enable shadow casting  
-        spotlight.shadow.bias = -0.0001
-        spotlight.shadow.mapSize.width = 1024*4; // Set shadow map size  
-        spotlight.shadow.mapSize.height = 1024*4;  
-        // spotlight.shadow.camera.near = 0.5; // Set shadow camera near  
-        // spotlight.shadow.camera.far = 50; // Set shadow camera far  
-        // spotlight.shadow.camera.fov = 30; // Set shadow camera field of view  
-        scene.add(spotlight);  
-
-	// Add directional light for sharp shadows
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-    directionalLight.position.set(5, 5, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -5;
-    directionalLight.shadow.camera.right = 5;
-    directionalLight.shadow.camera.top = 5;
-    directionalLight.shadow.camera.bottom = -5;
-    directionalLight.shadow.bias = -0.0001;
-    scene.add(directionalLight);
-
-    // Create shadow plane
-    createShadowPlane();
-	
-
-
-
-	    
-        // Set renderer with Reinhard tone mapping  
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });  
-        renderer.toneMapping = THREE.ReinhardToneMapping; // Set Reinhard tone mapping  
-        renderer.toneMappingExposure = 1; // Adjust exposure if needed  
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1;
         renderer.setPixelRatio(window.devicePixelRatio);  
         renderer.setSize(window.innerWidth, window.innerHeight);  
         renderer.xr.enabled = true;  
-        renderer.shadowMap.enabled = true; // Enable shadow maps  
-	       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);  
   
         pmremGenerator = new THREE.PMREMGenerator(renderer);  
@@ -234,10 +201,11 @@ function createShadowPlane() {
         controls.enableDamping = true;  
         controls.dampingFactor = 0.05;  
   
-        // VR SETUP  
+        // Create shadow plane
+        createShadowPlane();
+  
         document.body.appendChild(VRButton.createButton(renderer));  
   
-        // AR SETUP  
         let options = {  
             requiredFeatures: ['hit-test'],  
             optionalFeatures: ['dom-overlay'],  
@@ -257,6 +225,9 @@ function createShadowPlane() {
   
         window.addEventListener('resize', onWindowResize, false);  
   
+        // Touch event handlers
+        var touchDown, touchX, touchY, deltaX, deltaY;  
+  
         renderer.domElement.addEventListener('touchstart', function(e) {  
             e.preventDefault();  
             touchDown = true;  
@@ -271,22 +242,14 @@ function createShadowPlane() {
   
         renderer.domElement.addEventListener('touchmove', function(e) {  
             e.preventDefault();  
-  
-            if (!touchDown) {  
-                return;  
-            }  
-  
+            if (!touchDown) return;  
             deltaX = e.touches[0].pageX - touchX;  
             deltaY = e.touches[0].pageY - touchY;  
             touchX = e.touches[0].pageX;  
             touchY = e.touches[0].pageY;  
-  
             rotateObject();  
-  
         }, false);  
     }  
-  
-    var touchDown, touchX, touchY, deltaX, deltaY;  
   
     function rotateObject() {  
         if (current_object && reticle.visible) {  
@@ -321,10 +284,9 @@ function createShadowPlane() {
                 session.addEventListener('end', function() {  
                     hitTestSourceRequested = false;  
                     hitTestSource = null;  
-  
                     isAR = false;  
-  
                     reticle.visible = false;  
+                    shadowPlane.visible = false;  
   
                     var box = new THREE.Box3();  
                     box.setFromObject(current_object);  
@@ -341,14 +303,11 @@ function createShadowPlane() {
   
                 if (hitTestResults.length) {  
                     var hit = hitTestResults[0];  
-  
                     document.getElementById("place-button").style.display = "block";  
-  
                     reticle.visible = true;  
                     reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);  
                 } else {  
                     reticle.visible = false;  
-  
                     document.getElementById("place-button").style.display = "none";  
                 }  
             }  
@@ -356,7 +315,6 @@ function createShadowPlane() {
   
         renderer.render(scene, camera);  
     }  
-  
 </script>  
 </body>  
-</html>  
+</html>
