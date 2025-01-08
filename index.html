@@ -95,10 +95,9 @@
             current_object.visible = true;  
 		
 		
-       // Update shadow position and size to match the current object  
+        // Update shadow position to match the current object  
         if (shadowObject) {  
             shadowObject.position.set(current_object.position.x, 0, current_object.position.z);  
-            createShadowObject(); // Update the shadow shape and size  
         }  
         }  
     }  
@@ -152,7 +151,7 @@ function loadModel(model) {
 
 function createShadowObject() {  
     if (current_object) {  
-        // Create a bounding box for the current object  
+        // Calculate the bounding box of the current object  
         const box = new THREE.Box3().setFromObject(current_object);  
         const size = new THREE.Vector3();  
         box.getSize(size); // Get the size of the bounding box  
@@ -177,7 +176,8 @@ function createShadowObject() {
         shadowObject.position.y = 0.01; // Slightly above the ground to avoid z-fighting  
         scene.add(shadowObject);  
     }  
-}
+}  
+
 
     
     function init() {  
