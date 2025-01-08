@@ -1,408 +1,368 @@
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-    <title>three.js ar - hit test</title>  
-    <meta charset="utf-8">  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">  
-    <link type="text/css" rel="stylesheet" href="main.css">  
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>  
-</head>  
-<body>  
-  
-<div id="content">  
-	<div id="mySidenav" class="sidenav">
-		<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-		<a class="ar-object" id="1" href="#">item_1</a>
-		<a class="ar-object" id="2" href="#">item_2</a>
-		<a class="ar-object" id="3" href="#">item_3</a>
-		<a class="ar-object" id="4" href="#">item_4</a>
-		<a class="ar-object" id="yelow-sofa" href="#">yelow-sofa</a>
-		<a class="ar-object" id="blue-chair" href="#">blue-chair</a>
-		<a class="ar-object" id="arm-chair" href="#">arm-chair</a>
-		<a class="ar-object" id="sofa1" href="#">sofa obj 1</a>
-		<a class="ar-object" id="sofa-2b" href="#">sofa 2b </a>
-		<a class="ar-object" id="uploads_files_3063858_Lounge+Chair+ITF" href="#">Lounge Chair</a>		
-		<a class="ar-object" id="Memosofa" href="#">Memosofa obj</a>		
-		<a class="ar-object" id="ImageToStl.com_sofa" href="#">sofa1 glb (imagetostl)</a>
-		
-	</div>
-  
-    <div id="container" style="position: fixed;"></div>  
-  
-    <span style="font-size:30px;cursor:pointer;position: absolute;" onclick="openNav()">&#9776; open</span>  
-  
-    <button type="button" id="place-button">PLACE</button>  
-</div>  
-  
-<script>  
-    function openNav() {  
-        document.getElementById("mySidenav").style.width = "250px";  
-    }  
-  
-    function closeNav() {  
-        document.getElementById("mySidenav").style.width = "0";  
-    }  
-</script>  
-  
-<script type="module">  
-  
-    import * as THREE from './build/three.module.js';  
-    import { ARButton } from './jsm/webxr/ARButton.js';  
-    import { VRButton } from './jsm/webxr/VRButton.js';  
-    import { OrbitControls } from './jsm/controls/OrbitControls.js';  
-    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'; 
-		import { OBJLoader } from './jsm/loaders/OBJLoader.js';   
-    import { RGBELoader } from './jsm/loaders/RGBELoader.js';  
-    import { RoughnessMipmapper } from './jsm/utils/RoughnessMipmapper.js';  
-  
-    var container;  
-    var camera, scene, renderer;  
-    var controller;  
-  
-    var reticle, pmremGenerator, current_object, controls, isAR, envmap;  
-  
-    var hitTestSource = null;  
-    var hitTestSourceRequested = false;  
-  
-    init();  
-    animate();  
-  
-    $(".ar-object").click(function(){  
-        if(current_object != null){  
-            scene.remove(current_object);  
-        }  
-  
-        loadModel($(this).attr("id"));  
-    });  
-  
-    $("#ARButton").click(function(){  
-        current_object.visible = false;  
-        isAR = true;  
-    });  
-  
-    $("#VRButton").click(function(){  
-        scene.background = envmap;  
-        scene.position.z = -2;  
-    });  
-  
-    $("#place-button").click(function(){  
-        arPlace();  
-    });  
-  
-    function arPlace(){  
-        if ( reticle.visible ) {  
-            current_object.position.setFromMatrixPosition(reticle.matrix);  
-            current_object.visible = true;  
-		
-		
-        // Update shadow position to match the current object  
-        if (shadowObject) {  
-            shadowObject.position.set(current_object.position.x, 0, current_object.position.z);  
-        }  
-        }  
-    }  
-  
-	var shadowObject; // Declare a variable for the shadow object  
-  
-// Modify the loadModel function to create shadow after model loads
-function loadModel(model) {
-    new RGBELoader()
-        .setDataType(THREE.UnsignedByteType)
-        .setPath('textures/')
-        .load('photo_studio_01_1k.hdr', function(texture) {
-            envmap = pmremGenerator.fromEquirectangular(texture).texture;
-            scene.environment = envmap;
-            texture.dispose();
-            pmremGenerator.dispose();
-            render();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js ar - hit test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
 
-            var loader = new GLTFLoader().setPath('3d/');
-            loader.load(model + ".glb", function(glb) {
-                if (current_object) {
-                    scene.remove(current_object);
-                }
-                if (shadowObject) {
-                    scene.remove(shadowObject);
-                }
+<div id="content">
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a class="ar-object" id="1" href="#">item_1</a>
+        <a class="ar-object" id="2" href="#">item_2</a>
+        <a class="ar-object" id="3" href="#">item_3</a>
+        <a class="ar-object" id="4" href="#">item_4</a>
+        <a class="ar-object" id="yelow-sofa" href="#">yelow-sofa</a>
+        <a class="ar-object" id="blue-chair" href="#">blue-chair</a>
+        <a class="ar-object" id="arm-chair" href="#">arm-chair</a>
+        <a class="ar-object" id="sofa1" href="#">sofa obj 1</a>
+        <a class="ar-object" id="sofa-2b" href="#">sofa 2b </a>
+        <a class="ar-object" id="uploads_files_3063858_Lounge+Chair+ITF" href="#">Lounge Chair</a>
+        <a class="ar-object" id="Memosofa" href="#">Memosofa obj</a>
+        <a class="ar-object" id="ImageToStl.com_sofa" href="#">sofa1 glb (imagetostl)</a>
+    </div>
 
-                current_object = glb.scene;
-                current_object.traverse(n => {
-                    if (n.isMesh) {
-                        n.castShadow = true;
-                        n.receiveShadow = true;
-                        if (n.material.map) n.material.map.anisotropy = 16;
-                    }
-                });
+    <div id="container" style="position: fixed;"></div>
 
-                scene.add(current_object);
-                createShadowObject();
-                arPlace();
+    <span style="font-size:30px;cursor:pointer;position: absolute;" onclick="openNav()">&#9776; open</span>
 
-                var box = new THREE.Box3();
-                box.setFromObject(current_object);
-                box.center(controls.target);
+    <button type="button" id="place-button">PLACE</button>
+</div>
 
-                controls.update();
-                render();
-            });
-        });
-}
-
-// Replace the existing createShadowObject function with this improved version
-function createShadowObject() {
-    // Remove existing shadow if it exists
-    if (shadowObject) {
-        scene.remove(shadowObject);
+<script>
+    function openNav() {
+        document.getElementById("mySidenav").style.width = "250px";
     }
 
-    // Get the bounding box of the current object
-    const bbox = new THREE.Box3().setFromObject(current_object);
-    const size = bbox.getSize(new THREE.Vector3());
+    function closeNav() {
+        document.getElementById("mySidenav").style.width = "0";
+    }
+</script>
 
-    // Calculate the radius based on the largest horizontal dimension
-    const radius = Math.max(size.x, size.z) / 2;
+<script type="module">
+    import * as THREE from './build/three.module.js';
+    import { ARButton } from './jsm/webxr/ARButton.js';
+    import { VRButton } from './jsm/webxr/VRButton.js';
+    import { OrbitControls } from './jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+    import { OBJLoader } from './jsm/loaders/OBJLoader.js';
+    import { RGBELoader } from './jsm/loaders/RGBELoader.js';
+    import { RoughnessMipmapper } from './jsm/utils/RoughnessMipmapper.js';
 
-    // Create a plane geometry that matches the object's footprint
-    const shadowGeometry = new THREE.PlaneGeometry(size.x * 1.2, size.z * 1.2);
-    const shadowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        transparent: true,
-        opacity: 0.3,
-        depthWrite: false,
-        blending: THREE.MultiplyBlending
+    var container;
+    var camera, scene, renderer;
+    var controller;
+    var reticle, pmremGenerator, current_object, controls, isAR, envmap;
+    var hitTestSource = null;
+    var hitTestSourceRequested = false;
+    var shadowObject;
+
+    init();
+    animate();
+
+    $(".ar-object").click(function() {
+        if (current_object != null) {
+            scene.remove(current_object);
+        }
+        if (shadowObject != null) {
+            scene.remove(shadowObject);
+        }
+        loadModel($(this).attr("id"));
     });
 
-    shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);
-    shadowObject.rotation.x = -Math.PI / 2;
-    shadowObject.position.y = 0.001; // Slightly above ground to prevent z-fighting
+    $("#ARButton").click(function() {
+        current_object.visible = false;
+        isAR = true;
+    });
 
-    scene.add(shadowObject);
+    $("#VRButton").click(function() {
+        scene.background = envmap;
+        scene.position.z = -2;
+    });
 
-    // Update shadow position and rotation
-    updateShadow();
-}
+    $("#place-button").click(function() {
+        arPlace();
+    });
 
-// Add this new function to update shadow position and rotation
-function updateShadow() {
-    if (shadowObject && current_object) {
-        // Get current object's position
-        const objectPos = current_object.position;
-        
-        // Update shadow position
-        shadowObject.position.x = objectPos.x;
-        shadowObject.position.z = objectPos.z;
-        
-        // Update shadow rotation to match object's Y rotation
-        shadowObject.rotation.z = current_object.rotation.y;
-        
-        // Update shadow opacity based on height
-        const height = objectPos.y;
-        const maxHeight = 2; // Maximum height where shadow is still visible
-        const opacity = Math.max(0, 1 - (height / maxHeight));
-        shadowObject.material.opacity = opacity * 0.3;
-    }
-}
-
-// Modify the arPlace function to update shadow
-function arPlace() {
-    if (reticle.visible) {
-        current_object.position.setFromMatrixPosition(reticle.matrix);
-        current_object.visible = true;
-        
-        // Create or update shadow
-        if (!shadowObject) {
-            createShadowObject();
+    function createShadowObject() {
+        // Remove existing shadow if it exists
+        if (shadowObject) {
+            scene.remove(shadowObject);
         }
+
+        // Get the bounding box of the current object
+        const bbox = new THREE.Box3().setFromObject(current_object);
+        const size = bbox.getSize(new THREE.Vector3());
+
+        // Calculate the radius based on the largest horizontal dimension
+        const radius = Math.max(size.x, size.z) / 2;
+
+        // Create a plane geometry that matches the object's footprint
+        const shadowGeometry = new THREE.PlaneGeometry(size.x * 1.2, size.z * 1.2);
+        const shadowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            blending: THREE.MultiplyBlending
+        });
+
+        shadowObject = new THREE.Mesh(shadowGeometry, shadowMaterial);
+        shadowObject.rotation.x = -Math.PI / 2;
+        shadowObject.position.y = 0.001; // Slightly above ground to prevent z-fighting
+
+        scene.add(shadowObject);
+
+        // Update shadow position and rotation
         updateShadow();
     }
-}
 
-// Modify the rotateObject function to update shadow rotation
-function rotateObject() {
-    if (current_object && reticle.visible) {
-        current_object.rotation.y += deltaX / 100;
-        updateShadow(); // Update shadow rotation when object rotates
+    function updateShadow() {
+        if (shadowObject && current_object) {
+            // Get current object's position
+            const objectPos = current_object.position;
+            
+            // Update shadow position
+            shadowObject.position.x = objectPos.x;
+            shadowObject.position.z = objectPos.z;
+            
+            // Update shadow rotation to match object's Y rotation
+            shadowObject.rotation.z = current_object.rotation.y;
+            
+            // Update shadow opacity based on height
+            const height = objectPos.y;
+            const maxHeight = 2; // Maximum height where shadow is still visible
+            const opacity = Math.max(0, 1 - (height / maxHeight));
+            shadowObject.material.opacity = opacity * 0.3;
+        }
     }
-}
 
-    
-    function init() {  
-  
-        container = document.createElement('div');  
-        document.getElementById("container").appendChild(container);  
-  
-        scene = new THREE.Scene();  
-        window.scene = scene;  
-  
-        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 200);  
-  
-        // Reset lighting setup  
-        // scene.clear(); // Clear existing lights  
-  
-        // Add Hemispherical Light  
-        var hemisphericLight = new THREE.HemisphereLight(0xffa500, 0x808080, 1); // Orange and gray  
-        scene.add(hemisphericLight);  
-  
-        // Add Spotlight  
-        var spotlight = new THREE.SpotLight(0xffffff, 4); // White light with intensity 4  
-        spotlight.position.set(  
-            camera.position.x + 10,  
-            camera.position.y + 10,  
-            camera.position.z + 10  
-        );  
-        spotlight.castShadow = true; // Enable shadow casting  
-        spotlight.shadow.bias = -0.0001
-        spotlight.shadow.mapSize.width = 1024*4; // Set shadow map size  
-        spotlight.shadow.mapSize.height = 1024*4;  
-        // spotlight.shadow.camera.near = 0.5; // Set shadow camera near  
-        // spotlight.shadow.camera.far = 50; // Set shadow camera far  
-        // spotlight.shadow.camera.fov = 30; // Set shadow camera field of view  
-        scene.add(spotlight);  
-  
-        // Set renderer with Reinhard tone mapping  
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });  
-        renderer.toneMapping = THREE.ReinhardToneMapping; // Set Reinhard tone mapping  
-        renderer.toneMappingExposure = 1; // Adjust exposure if needed  
-        renderer.setPixelRatio(window.devicePixelRatio);  
-        renderer.setSize(window.innerWidth, window.innerHeight);  
-        renderer.xr.enabled = true;  
-        renderer.shadowMap.enabled = true; // Enable shadow maps  
-        container.appendChild(renderer.domElement);  
-  
-        pmremGenerator = new THREE.PMREMGenerator(renderer);  
-        pmremGenerator.compileEquirectangularShader();  
-  
-        controls = new OrbitControls(camera, renderer.domElement);  
-        controls.addEventListener('change', render);  
-        controls.minDistance = 2;  
-        controls.maxDistance = 10;  
-        controls.target.set(0, 0, -0.2);  
-        controls.enableDamping = true;  
-        controls.dampingFactor = 0.05;  
-  
-        // VR SETUP  
-        document.body.appendChild(VRButton.createButton(renderer));  
-  
-        // AR SETUP  
-        let options = {  
-            requiredFeatures: ['hit-test'],  
-            optionalFeatures: ['dom-overlay'],  
-        }  
-  
-        options.domOverlay = { root: document.getElementById('content') };  
-  
-        document.body.appendChild(ARButton.createButton(renderer, options));  
-  
-        reticle = new THREE.Mesh(  
-            new THREE.RingBufferGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),  
-            new THREE.MeshBasicMaterial()  
-        );  
-        reticle.matrixAutoUpdate = false;  
-        reticle.visible = false;  
-        scene.add(reticle);  
-  
-        window.addEventListener('resize', onWindowResize, false);  
-  
-        renderer.domElement.addEventListener('touchstart', function(e) {  
-            e.preventDefault();  
-            touchDown = true;  
-            touchX = e.touches[0].pageX;  
-            touchY = e.touches[0].pageY;  
-        }, false);  
-  
-        renderer.domElement.addEventListener('touchend', function(e) {  
-            e.preventDefault();  
-            touchDown = false;  
-        }, false);  
-  
-        renderer.domElement.addEventListener('touchmove', function(e) {  
-            e.preventDefault();  
-  
-            if (!touchDown) {  
-                return;  
-            }  
-  
-            deltaX = e.touches[0].pageX - touchX;  
-            deltaY = e.touches[0].pageY - touchY;  
-            touchX = e.touches[0].pageX;  
-            touchY = e.touches[0].pageY;  
-  
-            rotateObject();  
-  
-        }, false);  
-    }  
-  
-    var touchDown, touchX, touchY, deltaX, deltaY;  
-  
-    function rotateObject() {  
-        if (current_object && reticle.visible) {  
-            current_object.rotation.y += deltaX / 100;  
-        }  
-    }  
-  
-    function onWindowResize() {  
-        camera.aspect = window.innerWidth / window.innerHeight;  
-        camera.updateProjectionMatrix();  
-        renderer.setSize(window.innerWidth, window.innerHeight);  
-    }  
-  
-    function animate() {  
-        renderer.setAnimationLoop(render);  
-        requestAnimationFrame(animate);  
-        controls.update();  
-    }  
-  
-    function render(timestamp, frame) {  
-        if (frame && isAR) {  
-            var referenceSpace = renderer.xr.getReferenceSpace();  
-            var session = renderer.xr.getSession();  
-  
-            if (hitTestSourceRequested === false) {  
-                session.requestReferenceSpace('viewer').then(function(referenceSpace) {  
-                    session.requestHitTestSource({ space: referenceSpace }).then(function(source) {  
-                        hitTestSource = source;  
-                    });  
-                });  
-  
-                session.addEventListener('end', function() {  
-                    hitTestSourceRequested = false;  
-                    hitTestSource = null;  
-  
-                    isAR = false;  
-  
-                    reticle.visible = false;  
-  
-                    var box = new THREE.Box3();  
-                    box.setFromObject(current_object);  
-                    box.center(controls.target);  
-  
-                    document.getElementById("place-button").style.display = "none";  
-                });  
-  
-                hitTestSourceRequested = true;  
-            }  
-  
-            if (hitTestSource) {  
-                var hitTestResults = frame.getHitTestResults(hitTestSource);  
-  
-                if (hitTestResults.length) {  
-                    var hit = hitTestResults[0];  
-  
-                    document.getElementById("place-button").style.display = "block";  
-  
-                    reticle.visible = true;  
-                    reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);  
-                } else {  
-                    reticle.visible = false;  
-  
-                    document.getElementById("place-button").style.display = "none";  
-                }  
-            }  
-        }  
-  
-        renderer.render(scene, camera);  
-    }  
-  
-</script>  
-</body>  
-</html>  
+    function arPlace() {
+        if (reticle.visible) {
+            current_object.position.setFromMatrixPosition(reticle.matrix);
+            current_object.visible = true;
+            
+            // Create or update shadow
+            if (!shadowObject) {
+                createShadowObject();
+            }
+            updateShadow();
+        }
+    }
+
+    function loadModel(model) {
+        new RGBELoader()
+            .setDataType(THREE.UnsignedByteType)
+            .setPath('textures/')
+            .load('photo_studio_01_1k.hdr', function(texture) {
+                envmap = pmremGenerator.fromEquirectangular(texture).texture;
+                scene.environment = envmap;
+                texture.dispose();
+                pmremGenerator.dispose();
+                render();
+
+                var loader = new GLTFLoader().setPath('3d/');
+                loader.load(model + ".glb", function(glb) {
+                    if (current_object) {
+                        scene.remove(current_object);
+                    }
+                    if (shadowObject) {
+                        scene.remove(shadowObject);
+                    }
+
+                    current_object = glb.scene;
+                    current_object.traverse(n => {
+                        if (n.isMesh) {
+                            n.castShadow = true;
+                            n.receiveShadow = true;
+                            if (n.material.map) n.material.map.anisotropy = 16;
+                        }
+                    });
+
+                    scene.add(current_object);
+                    createShadowObject();
+                    arPlace();
+
+                    var box = new THREE.Box3();
+                    box.setFromObject(current_object);
+                    box.center(controls.target);
+
+                    controls.update();
+                    render();
+                });
+            });
+    }
+
+    function init() {
+        container = document.createElement('div');
+        document.getElementById("container").appendChild(container);
+
+        scene = new THREE.Scene();
+        window.scene = scene;
+
+        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 200);
+
+        // Add Hemispherical Light
+        var hemisphericLight = new THREE.HemisphereLight(0xffa500, 0x808080, 1);
+        scene.add(hemisphericLight);
+
+        // Add Spotlight
+        var spotlight = new THREE.SpotLight(0xffffff, 4);
+        spotlight.position.set(
+            camera.position.x + 10,
+            camera.position.y + 10,
+            camera.position.z + 10
+        );
+        spotlight.castShadow = true;
+        spotlight.shadow.bias = -0.0001;
+        spotlight.shadow.mapSize.width = 1024 * 4;
+        spotlight.shadow.mapSize.height = 1024 * 4;
+        scene.add(spotlight);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true;
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.addEventListener('change', render);
+        controls.minDistance = 2;
+        controls.maxDistance = 10;
+        controls.target.set(0, 0, -0.2);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        document.body.appendChild(VRButton.createButton(renderer));
+
+        let options = {
+            requiredFeatures: ['hit-test'],
+            optionalFeatures: ['dom-overlay'],
+        }
+
+        options.domOverlay = { root: document.getElementById('content') };
+
+        document.body.appendChild(ARButton.createButton(renderer, options));
+
+        reticle = new THREE.Mesh(
+            new THREE.RingBufferGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
+            new THREE.MeshBasicMaterial()
+        );
+        reticle.matrixAutoUpdate = false;
+        reticle.visible = false;
+        scene.add(reticle);
+
+        window.addEventListener('resize', onWindowResize, false);
+
+        // Touch event handlers
+        var touchDown = false;
+        var touchX = 0;
+        var touchY = 0;
+        var deltaX = 0;
+        var deltaY = 0;
+
+        renderer.domElement.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            touchDown = true;
+            touchX = e.touches[0].pageX;
+            touchY = e.touches[0].pageY;
+        }, false);
+
+        renderer.domElement.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            touchDown = false;
+        }, false);
+
+        renderer.domElement.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+
+            if (!touchDown) {
+                return;
+            }
+
+            deltaX = e.touches[0].pageX - touchX;
+            deltaY = e.touches[0].pageY - touchY;
+            touchX = e.touches[0].pageX;
+            touchY = e.touches[0].pageY;
+
+            rotateObject();
+        }, false);
+    }
+
+    function rotateObject() {
+        if (current_object && reticle.visible) {
+            current_object.rotation.y += deltaX / 100;
+            updateShadow(); // Update shadow rotation when object rotates
+        }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        renderer.setAnimationLoop(render);
+        requestAnimationFrame(animate);
+        controls.update();
+    }
+
+    function render(timestamp, frame) {
+        if (frame && isAR) {
+            var referenceSpace = renderer.xr.getReferenceSpace();
+            var session = renderer.xr.getSession();
+
+            if (hitTestSourceRequested === false) {
+                session.requestReferenceSpace('viewer').then(function(referenceSpace) {
+                    session.requestHitTestSource({ space: referenceSpace }).then(function(source) {
+                        hitTestSource = source;
+                    });
+                });
+
+                session.addEventListener('end', function() {
+                    hitTestSourceRequested = false;
+                    hitTestSource = null;
+                    isAR = false;
+                    reticle.visible = false;
+
+                    var box = new THREE.Box3();
+                    box.setFromObject(current_object);
+                    box.center(controls.target);
+
+                    document.getElementById("place-button").style.display = "none";
+                });
+
+                hitTestSourceRequested = true;
+            }
+
+            if (hitTestSource) {
+                var hitTestResults = frame.getHitTestResults(hitTestSource);
+
+                if (hitTestResults.length) {
+                    var hit = hitTestResults[0];
+                    document.getElementById("place-button").style.display = "block";
+                    reticle.visible = true;
+                    reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
+                } else {
+                    reticle.visible = false;
+                    document.getElementById("place-button").style.display = "none";
+                }
+            }
+        }
+
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
