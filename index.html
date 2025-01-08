@@ -86,10 +86,10 @@
     });  
 
     function createShadowPlane() {
-        const geometry = new THREE.PlaneGeometry(2, 2);
+        const geometry = new THREE.PlaneGeometry(20, 20);
         const material = new THREE.ShadowMaterial({
             color: 0x000000,
-            opacity: 0.3,
+            opacity: 0.5,
         });
         shadowPlane = new THREE.Mesh(geometry, material);
         shadowPlane.rotation.x = -Math.PI / 2;
