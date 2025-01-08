@@ -60,7 +60,7 @@
     var controller;  
   
     var reticle, pmremGenerator, current_object, controls, isAR, envmap;  
-  
+  	
     var hitTestSource = null;  
     var hitTestSourceRequested = false;  
   
@@ -93,6 +93,10 @@
         if ( reticle.visible ) {  
             current_object.position.setFromMatrixPosition(reticle.matrix);  
             current_object.visible = true;  
+
+		 // Position and show the shadow plane
+        shadowPlane.position.setFromMatrixPosition(reticle.matrix);
+        shadowPlane.visible = true;
         }  
     }  
   
@@ -137,8 +141,22 @@
                 });  
             });  
         }  
+let shadowPlane
+function createShadowPlane() {
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const material = new THREE.ShadowMaterial({
+        color: 0x000000,
+        opacity: 0.3,
+    });
+    shadowPlane = new THREE.Mesh(geometry, material);
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = 0.001; // Slightly above ground to prevent z-fighting
+    shadowPlane.receiveShadow = true;
+    shadowPlane.visible = false;
+    scene.add(shadowPlane);
+}
 
-    
+	
     function init() {  
   
         container = document.createElement('div');  
@@ -171,7 +189,29 @@
         // spotlight.shadow.camera.far = 50; // Set shadow camera far  
         // spotlight.shadow.camera.fov = 30; // Set shadow camera field of view  
         scene.add(spotlight);  
-  
+
+	// Add directional light for sharp shadows
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.left = -5;
+    directionalLight.shadow.camera.right = 5;
+    directionalLight.shadow.camera.top = 5;
+    directionalLight.shadow.camera.bottom = -5;
+    directionalLight.shadow.bias = -0.0001;
+    scene.add(directionalLight);
+
+    // Create shadow plane
+    createShadowPlane();
+	
+
+
+
+	    
         // Set renderer with Reinhard tone mapping  
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });  
         renderer.toneMapping = THREE.ReinhardToneMapping; // Set Reinhard tone mapping  
@@ -180,6 +220,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);  
         renderer.xr.enabled = true;  
         renderer.shadowMap.enabled = true; // Enable shadow maps  
+	       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);  
   
         pmremGenerator = new THREE.PMREMGenerator(renderer);  
