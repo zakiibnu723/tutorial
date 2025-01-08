@@ -85,67 +85,87 @@
         arPlace();  
     });  
 
-    function createShadowPlane() {
-        const geometry = new THREE.PlaneGeometry(20, 20);
-        const material = new THREE.ShadowMaterial({
-            color: 0x000000,
+function createShadowPlane() {
+    const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.ShadowMaterial({
             opacity: 0.5,
-        });
-        shadowPlane = new THREE.Mesh(geometry, material);
-        shadowPlane.rotation.x = -Math.PI / 2;
-        shadowPlane.position.y = 0.001;
-        shadowPlane.receiveShadow = true;
-        shadowPlane.visible = false;
+            transparent: true
+        })
+    );
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = 0;
+    shadowPlane.receiveShadow = true;
+    return shadowPlane;
+}
+ // Modify your arPlace() function:
+function arPlace() {
+    if (reticle.visible) {
+        // Remove existing shadow plane if it exists
+        const existingShadow = scene.getObjectByName('shadowPlane');
+        if (existingShadow) scene.remove(existingShadow);
+
+        // Create and position shadow plane
+        const shadowPlane = createShadowPlane();
+        shadowPlane.name = 'shadowPlane';
+        shadowPlane.position.setFromMatrixPosition(reticle.matrix);
         scene.add(shadowPlane);
+
+        // Position the object
+        current_object.position.setFromMatrixPosition(reticle.matrix);
+        current_object.visible = true;
+
+        // Update lighting to cast shadows
+        const spotLight = scene.getObjectByProperty('type', 'SpotLight');
+        if (spotLight) {
+            spotLight.position.set(
+                current_object.position.x + 5,
+                current_object.position.y + 5,
+                current_object.position.z + 5
+            );
+            spotLight.target = current_object;
+        }
     }
+}
   
-    function arPlace(){  
-        if (reticle.visible) {  
-            current_object.position.setFromMatrixPosition(reticle.matrix);  
-            current_object.visible = true;  
+// Modify your loadModel() function to ensure shadows are enabled:
+function loadModel(model) {
+    new RGBELoader()
+        .setDataType(THREE.UnsignedByteType)
+        .setPath('textures/')
+        .load('photo_studio_01_1k.hdr', function(texture) {
+            envmap = pmremGenerator.fromEquirectangular(texture).texture;
+            scene.environment = envmap;
+            texture.dispose();
+            pmremGenerator.dispose();
 
-            // Position and show the shadow plane
-            shadowPlane.position.setFromMatrixPosition(reticle.matrix);
-            shadowPlane.visible = true;
-        }  
-    }  
-  
-    function loadModel(model) {  
-        new RGBELoader()  
-        .setDataType(THREE.UnsignedByteType)  
-        .setPath('textures/')  
-        .load('photo_studio_01_1k.hdr', function (texture) {  
-            envmap = pmremGenerator.fromEquirectangular(texture).texture;  
-            scene.environment = envmap;  
-            texture.dispose();  
-            pmremGenerator.dispose();  
-            render();  
-
-            var loader = new GLTFLoader().setPath('3d/');  
-            loader.load(model + ".glb", function (glb) {  
-                current_object = glb.scene;                 
+            var loader = new GLTFLoader().setPath('3d/');
+            loader.load(model + ".glb", function(glb) {
+                current_object = glb.scene;
                 
-                // Enable shadows for all meshes in the model
+                // Enable shadows for all meshes
                 current_object.traverse(node => {
                     if (node.isMesh) {
                         node.castShadow = true;
                         node.receiveShadow = true;
-                        if (node.material.map) node.material.map.anisotropy = 16;
+                        if (node.material) {
+                            node.material.shadowSide = THREE.FrontSide;
+                        }
                     }
-                });  
+                });
 
-                scene.add(current_object);  
-                arPlace();  
+                scene.add(current_object);
+                arPlace();
 
-                var box = new THREE.Box3();  
-                box.setFromObject(current_object);  
-                box.center(controls.target);  
+                var box = new THREE.Box3();
+                box.setFromObject(current_object);
+                box.center(controls.target);
 
-                controls.update();  
-                render();  
-            });  
-        });  
-    }  
+                controls.update();
+                render();
+            });
+        });
+}
     
     function init() {  
         container = document.createElement('div');  
