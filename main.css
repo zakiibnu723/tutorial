@@ -59,4 +59,5 @@ body {
 
   #VRButton{
     margin-bottom: 70px !important;
+      display: none;
   }
