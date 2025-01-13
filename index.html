@@ -138,6 +138,28 @@
     });  
 
 
+	document.getElementById('ARButton').addEventListener('click', function() {  
+    if (renderer.xr.isPresenting) {  
+        return; // Already in AR mode  
+    }  
+  
+    // Start AR session  
+    navigator.xr.requestSession('immersive-ar').then(function(session) {  
+        renderer.xr.setSession(session);  
+        session.addEventListener('end', function() {  
+            console.log('AR session ended');  
+        });  
+        session.addEventListener('start', function() {  
+            console.log('AR session started');  
+            // Initialize camera and other settings  
+            camera.updateProjectionMatrix();  
+            renderer.setAnimationLoop(render);  
+        });  
+    }).catch(function(err) {  
+        console.error('Failed to start AR session:', err);  
+    });  
+});  
+
 
 
 
