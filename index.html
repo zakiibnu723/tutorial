@@ -103,6 +103,9 @@
     <span style="font-size:30px;cursor:pointer;position: absolute;" onclick="openNav()">&#9776; open</span>  
   
     <button type="button" id="place-button">PLACE</button>  
+	<div id="loading-text" style="position: absolute; top: 50%; left: 50%; color: white; font-size: 20px; background-color: rgba(0, 0, 0, 0.5); padding: 5px; display: none;">  
+        Loading...  
+    </div>  
 </div>  
   
 <script>  
@@ -168,12 +171,15 @@
   var shadowPlane; // Declare a variable for the shadow plane  
   
 function loadModel(model) {  
-    // Load GLTF model  
+    // Show loading text  
+    const loadingText = document.getElementById('loading-text');  
+    loadingText.style.display = 'block';  
+    loadingText.textContent = 'Loading...';  
+  
     new RGBELoader()  
         .setDataType(THREE.UnsignedByteType)  
         .setPath('textures/')  
         .load('photo_studio_01_1k.hdr', function (texture) {  
-  
             envmap = pmremGenerator.fromEquirectangular(texture).texture;  
   
             scene.environment = envmap;  
@@ -182,33 +188,47 @@ function loadModel(model) {
             render();  
   
             var loader = new GLTFLoader().setPath('3d/');  
-            loader.load(model + ".glb", function (glb) {  
+            loader.load(  
+                model + ".glb",  
+                function (glb) {  
+                    // Model loaded  
+                    current_object = glb.scene;  
   
-                current_object = glb.scene;  
+                    // Traverse the current_object to set shadow properties  
+                    current_object.traverse(n => {  
+                        if (n.isMesh) {  
+                            n.castShadow = true; // Enable shadow casting  
+                            n.receiveShadow = true; // Enable shadow receiving  
   
-                // Traverse the current_object to set shadow properties  
-                current_object.traverse(n => {  
-                    if (n.isMesh) {  
-                        n.castShadow = true; // Enable shadow casting  
-                        n.receiveShadow = true; // Enable shadow receiving  
+                            if (n.material.map) n.material.map.anisotropy = 16;  
+                        }  
+                    });  
   
-                        if (n.material.map) n.material.map.anisotropy = 16;  
+                    scene.add(current_object);  
+                    arPlace();  
+  
+                    // Hide loading text  
+                    loadingText.style.display = 'none';  
+  
+                    var box = new THREE.Box3();  
+                    box.setFromObject(current_object);  
+                    box.center(controls.target);  
+  
+                    controls.update();  
+                    render();  
+                },  
+                function (xhr) {  
+                    // Update loading text with progress  
+                    if (xhr.lengthComputable) {  
+                        const percentComplete = (xhr.loaded / xhr.total) * 100;  
+                        loadingText.textContent = `Loading... ${Math.round(percentComplete)}%`;  
                     }  
-                });  
-  
-                scene.add(current_object);  
-                arPlace();  
-  
-                // Create shadow plane  
-                // createShadowPlane();  
-  
-                var box = new THREE.Box3();  
-                box.setFromObject(current_object);  
-                box.center(controls.target);  
-  
-                controls.update();  
-                render();  
-            });  
+                },  
+                function (error) {  
+                    console.error('An error happened', error);  
+                    loadingText.textContent = 'Error loading model';  
+                }  
+            );  
         });  
 }  
   
